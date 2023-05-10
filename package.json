@@ -1,0 +1,13 @@
+{
+  "name": "polar",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "bin/index.js",
+  "bin": {
+    "polar": "./bin/index.js"
+  },
+  "keywords": [],
+  "author": "nablaFox (https://github.com/nablaFox)",
+  "license": "ISC"
+}
