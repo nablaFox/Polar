@@ -15,9 +15,16 @@ export const instanceParams = {
   UserData: [
     'sudo apt update',
     'sudo apt upgrade -y',
+    // install nginx
     'sudo apt install certbot python3-certbot-nginx nginx -y',
     'sudo mkdir /etc/nginx/snippets/certs',
-    // download and install the scripts
+    // download and install polar scripts
+    'curl -L https://github.com/nablaFox/Polar/archive/main.zip -o Polar.zip',
+    'unzip Polar.zip',
+    'sudo mv Polar-main/src/scripts/polar.sh /usr/bin/polar',
+    'sudo mv Polar-main/src/scripts /usr/lib/polar',
+    'sudo chmod +x /usr/bin/polar',
+    'sudo rm -r Polar*'
   ].join(' && '),
 }
 
@@ -31,7 +38,10 @@ export const nginxConfig = {
 
   app: {
     listen: '443 ssl',
-    return: '200 "Ok"'
+    include: ['snippets/ssl.conf'],
+    'location /': {
+      proxy_set_header: ['Host $host', 'X-Real-IP $remote_addr']
+    }
   },
 
   sslConfig: {

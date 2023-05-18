@@ -2,10 +2,10 @@
 import { program } from 'commander'
 import { Client } from 'ssh2'
 import { readFileSync } from 'fs'
-import { certbot, configureNginx } from '../src/nginx.js'
+import { certbot, configureNginx, configureAppRules } from '../src/nginx.js'
 import { describeInstance, startInstance, stopInstance, rebootInstance } from '../src/ec2.js'
 import { runCommand, runShell, uploadFile, uploadFolder } from '../src/ssh.js'
-import { ec2Client } from '../src/config.js'
+import { ec2Client, nginxConfig } from '../src/config.js'
 
 const test = async (fn, ...params) => {
   const result = await fn(...params)
@@ -32,15 +32,16 @@ const clientConfig = {
 // ssh
 // test(uploadFile, clientConfig, '/home/ubuntu/backbone', 'backbone')
 // test(uploadFolder, clientConfig, '/home/ubuntu/bin', 'bin')
-// await test(runCommand, clientConfig, ['ls -la'])
+// test(runCommand, clientConfig, ['ls -la'])
 
 // nginx
-// await test(certbot, clientConfig, 'test.com', {
+// test(certbot, clientConfig, 'test.com', {
 //   onFirstCheck: data => console.log(data),
 //   onSecondCheck: data => console.log(data),
 // })
 
-// await test(configureNginx, clientConfig, 'test.com')
+// test(configureNginx, clientConfig, 'test.com')
+// test(configureAppRules, clientConfig, 'test', 'test.com', 4000, nginxConfig.app)
 
 // ec2
 // test(describeInstance, instanceId, ec2Client)

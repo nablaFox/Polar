@@ -1,4 +1,3 @@
-import { nginxConfig } from './config.js'
 import { runCommand, runShell } from './ssh.js'
 
 // function to normalize the nginx config
@@ -6,8 +5,9 @@ export const nginxNormalize = (config, option) => {
   const result = Object.entries(config).map(([key, value]) => {
     if (Array.isArray(value)) {
       return value.map(item => `${key} ${item};\n`).join('')
-    }
-    else {
+    } else if (typeof value === 'object') {
+      return `${key} {\n${nginxNormalize(value)}}\n`
+    } else {
       return `${key} ${value};\n`
     }
   }).join('')
@@ -17,13 +17,13 @@ export const nginxNormalize = (config, option) => {
 }
 
 // function to configure nginx with letsencrypt
-export const configureNginx = async (config, domain) => {
+export const configureNginx = async (sshConfig, domain, config) => {
   const serverConfig = nginxNormalize({
     server_name: `*.${domain}`,
-    ...nginxConfig.server,
+    ...config.server,
   }, 'server')
 
-  const sslConfig = nginxNormalize(nginxConfig.sslConfig)
+  const sslConfig = nginxNormalize(config.ssl)
 
   const sslCertificate = nginxNormalize({
     ssl_certificate: `/etc/letsencrypt/live/${domain}/fullchain.pem`,
@@ -31,15 +31,15 @@ export const configureNginx = async (config, domain) => {
     ssl_trusted_certificate: `/etc/letsencrypt/live/${domain}/chain.pem`
   })
 
-  return runCommand(config, [
-    `echo '${serverConfig}' | sudo tee /home/ubuntu/conf.d/${domain.split('.')[0]}.conf `,
+  return runCommand(sshConfig, [
+    `echo '${serverConfig}' | sudo tee /etc/nginx/conf.d/${domain.split('.')[0]}.conf `,
     `echo '${sslConfig}' | sudo tee /etc/nginx/snippets/ssl.conf`,
     `echo '${sslCertificate}' | sudo tee /etc/nginx/snippets/certs/${domain}`
   ])
 }
 
 // function to run certbot
-export const certbot = async (config, domain, fn) => {
+export const certbot = async (sshConfig, domain, fn) => {
   const command =  `sudo certbot certonly --manual -d *.${domain} -d ${domain} --agree-tos --manual-public-ip-logging-ok --preferred-challenges dns-01 --server https://acme-v02.api.letsencrypt.org/directory --register-unsafely-without-email --rsa-key-size 4096`
 
   let check1 = false
@@ -48,7 +48,7 @@ export const certbot = async (config, domain, fn) => {
   const isError = data => /failed to authenticate/.exec(data)
   const isCheck = data => /[\w\d-]{40,}/.exec(data)
 
-  return runShell(config, (rl, stream, close) => {
+  return runShell(sshConfig, (rl, stream, close) => {
     stream.write(`${command}\n`)
 
     rl.on('line', input => {
@@ -73,4 +73,24 @@ export const certbot = async (config, domain, fn) => {
       }
     })
   })
+}
+
+// function to configure the app
+export const configureAppRules = async (sshConfig, app, domain, port, config) => {
+  const appConfig = nginxNormalize({
+    server_name: `${app}.${domain}`,
+    ...config,
+    include: [
+      ...config.include,
+      `snippets/certs/${domain}`
+    ],
+    'location /': {
+      proxy_pass: `http://localhost:${port}`,
+      ...config['location /']
+    }
+  }, 'server')
+
+  return runCommand(sshConfig, [
+    `echo '${appConfig}' | sudo tee /etc/nginx/conf.d/${app}.${domain.split('.')[0]}.conf`
+  ])
 }
