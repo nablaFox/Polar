@@ -49,8 +49,8 @@ polart start [project]
 
 polar stop [project]
 
-polar instance off
+polar instance --off
 
-polar instance on
+polar instance --on
 
-polar instance status
+polar instance --status
