@@ -32,9 +32,9 @@ export const configureNginx = async (sshConfig, domain, config) => {
   })
 
   return runCommand(sshConfig, [
-    `echo '${serverConfig}' | sudo tee /etc/nginx/conf.d/${domain.split('.')[0]}.conf `,
-    `echo '${sslConfig}' | sudo tee /etc/nginx/snippets/ssl.conf`,
-    `echo '${sslCertificate}' | sudo tee /etc/nginx/snippets/certs/${domain}`
+    `echo '${serverConfig}' | sudo tee /etc/nginx/conf.d/${domain.split('.')[0]}.conf > /dev/null`,
+    `echo '${sslConfig}' | sudo tee /etc/nginx/snippets/ssl.conf > /dev/null`,
+    `echo '${sslCertificate}' | sudo tee /etc/nginx/snippets/certs/${domain} > /dev/null`
   ])
 }
 
@@ -76,7 +76,7 @@ export const certbot = async (sshConfig, domain, fn) => {
 }
 
 // function to configure the app
-export const configureAppRules = async (sshConfig, app, domain, port, config) => {
+export const configureAppRules = async (app, port, domain, config, sshConfig) => {
   const appConfig = nginxNormalize({
     server_name: `${app}.${domain}`,
     ...config,
@@ -91,6 +91,7 @@ export const configureAppRules = async (sshConfig, app, domain, port, config) =>
   }, 'server')
 
   return runCommand(sshConfig, [
-    `echo '${appConfig}' | sudo tee /etc/nginx/conf.d/${app}.${domain.split('.')[0]}.conf`
+    `echo '${appConfig}' | sudo tee /etc/nginx/conf.d/${app}.${domain.split('.')[0]}.conf`,
+    'sudo systemctl restart nginx'
   ])
 }

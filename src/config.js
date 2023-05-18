@@ -18,13 +18,17 @@ export const instanceParams = {
     // install nginx
     'sudo apt install certbot python3-certbot-nginx nginx -y',
     'sudo mkdir /etc/nginx/snippets/certs',
+    // download and install nodejs
+    'curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - && sudo apt-get install -y nodejs',
     // download and install polar scripts
     'curl -L https://github.com/nablaFox/Polar/archive/main.zip -o Polar.zip',
     'unzip Polar.zip',
     'sudo mv Polar-main/src/scripts/polar.sh /usr/bin/polar',
     'sudo mv Polar-main/src/scripts /usr/lib/polar',
     'sudo chmod +x /usr/bin/polar',
-    'sudo rm -r Polar*'
+    'sudo rm -r Polar*',
+    // polar setup
+    'mkdir /home/ubuntu/app',
   ].join(' && '),
 }
 

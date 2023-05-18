@@ -105,11 +105,10 @@ export const uploadFile = async (config, remotePath, payload) => {
 }
 
 // function to upload folder to the instance
-export const uploadFolder = async (config, remotePath, localPath) => {
+export const uploadFolder = async (config, remotePath) => {
   remotePath += '.tar'
 
-  // compress the folder
-  const compressed = tar.c([path.basename(localPath)])
+  const compressed = tar.c(['.'])
 
   const uploadFailed = await uploadFile(config, remotePath, stream => {
     compressed.pipe(stream)
@@ -118,8 +117,8 @@ export const uploadFolder = async (config, remotePath, localPath) => {
 
   if (uploadFailed) { return uploadFailed }
 
-  await runCommand(config, [
-    `tar -xf ${remotePath} -C ${path.dirname(remotePath)}`,
+  return runCommand(config, [
+    `tar -xf ${remotePath} -C ${path.dirname(remotePath)} --one-top-level`,
     `rm ${remotePath}`
   ])
 }
