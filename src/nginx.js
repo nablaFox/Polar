@@ -1,41 +1,77 @@
 import { runCommand, runShell } from './ssh.js'
 
+// function to merge n nginx configs
+export const mergeNginxConf = (...config) => {
+  const result = {}
+  config.forEach(conf => {
+    Object.entries(conf).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        result[key] = result[key] ? [...result[key], ...value] : value
+      } else if (typeof value === 'object') {
+        result[key] = result[key] ? mergeNginxConf(result[key], value) : value
+      } else {
+        result[key] = result[key] ? result[key] : value
+      }
+    })
+  })
+
+  return result
+}
+
 // function to normalize the nginx config
-export const nginxNormalize = (config, option) => {
-  const result = Object.entries(config).map(([key, value]) => {
+export const nginxNormalize = (option, ...config) => {
+  const mergedConfig = mergeNginxConf(...config)
+
+  const result = Object.entries(mergedConfig).map(([key, value]) => {
     if (Array.isArray(value)) {
       return value.map(item => `${key} ${item};\n`).join('')
     } else if (typeof value === 'object') {
-      return `${key} {\n${nginxNormalize(value)}}\n`
+      return nginxNormalize(key, value)
     } else {
       return `${key} ${value};\n`
     }
   }).join('')
 
-  if (option) { return `${option} {\n${result}}` }
+  if (option) { return `${option} {\n${result}}\n` }
   return result
 }
 
 // function to configure nginx with letsencrypt
-export const configureNginx = async (sshConfig, domain, config) => {
-  const serverConfig = nginxNormalize({
+export const configureNginx = async (domain, sshConfig, config) => {
+  const serverConfig = nginxNormalize('server', {
     server_name: `*.${domain}`,
     ...config.server,
-  }, 'server')
+  })
 
-  const sslConfig = nginxNormalize(config.ssl)
+  const sslConfig = nginxNormalize(null, config.ssl)
 
-  const sslCertificate = nginxNormalize({
+  const sslCertificate = nginxNormalize(null, {
     ssl_certificate: `/etc/letsencrypt/live/${domain}/fullchain.pem`,
     ssl_certificate_key: `/etc/letsencrypt/live/${domain}/privkey.pem`,
     ssl_trusted_certificate: `/etc/letsencrypt/live/${domain}/chain.pem`
   })
 
-  return runCommand(sshConfig, [
-    `echo '${serverConfig}' | sudo tee /etc/nginx/conf.d/${domain.split('.')[0]}.conf > /dev/null`,
-    `echo '${sslConfig}' | sudo tee /etc/nginx/snippets/ssl.conf > /dev/null`,
-    `echo '${sslCertificate}' | sudo tee /etc/nginx/snippets/certs/${domain} > /dev/null`
-  ])
+  return (await runCommand(sshConfig, [
+    `echo '${serverConfig}' | sudo tee /etc/nginx/conf.d/${domain.split('.')[0]}.conf`,
+    `echo '${sslConfig}' | sudo tee /etc/nginx/snippets/ssl.conf`,
+    `echo '${sslCertificate}' | sudo tee /etc/nginx/snippets/certs/${domain}`
+  ]))[1]
+}
+
+// function to configure the app
+export const configureAppRules = async (app, port, domain, sshConfig, ...config) => {
+  const appConfig = nginxNormalize('server', {
+    server_name: `${app}.${domain}`,
+    include: [`snippets/certs/${domain}`],
+    'location /': { 
+      proxy_pass: [`http://localhost:${port}`]
+    }
+  }, ...config)
+
+  return (await runCommand(sshConfig, [
+    `echo '${appConfig}' | sudo tee /etc/nginx/conf.d/${app}.${domain.split('.')[0]}.conf`,
+    `sudo systemctl restart nginx || sudo rm /etc/nginx/conf.d/${app}*`
+  ]))[1]
 }
 
 // function to run certbot
@@ -73,25 +109,4 @@ export const certbot = async (sshConfig, domain, fn) => {
       }
     })
   })
-}
-
-// function to configure the app
-export const configureAppRules = async (app, port, domain, config, sshConfig) => {
-  const appConfig = nginxNormalize({
-    server_name: `${app}.${domain}`,
-    ...config,
-    include: [
-      ...config.include,
-      `snippets/certs/${domain}`
-    ],
-    'location /': {
-      proxy_pass: `http://localhost:${port}`,
-      ...config['location /']
-    }
-  }, 'server')
-
-  return runCommand(sshConfig, [
-    `echo '${appConfig}' | sudo tee /etc/nginx/conf.d/${app}.${domain.split('.')[0]}.conf`,
-    'sudo systemctl restart nginx'
-  ])
 }

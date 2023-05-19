@@ -4,26 +4,24 @@ import yaml from 'js-yaml'
 import fs from 'fs'
 
 // function to upload the application
-export const upload = async (domain, nginxConfig, sshConfig) => {
+export const upload = async (domain, baseConfig, sshConfig) => {
   const file = fs.readFileSync('polar.yml', 'utf8')
   if (!file) {
-    throw 'polar.yml file not found'
+    return new Error('polar.yml file not found')
   }
    
   // look for the polar.yml file and get the app name and port
-  const { app, port } = yaml.load(file)
+  const { app, port, server } = yaml.load(file)
   if (!app) { throw 'App name missing in polar.yml' }
   if (!port) { throw 'Port missing in polar.yml' }
-
-  try {
-    // upload the app folder to the server
-    await uploadFolder(sshConfig, `/home/ubuntu/app/${app}`)
-
-    // configure nginx
-    await configureAppRules(app, port, domain, nginxConfig, sshConfig)
-  } catch(err) {
-    return err
-  }
+  
+  const failedConfig = await configureAppRules(
+    app, port, domain, sshConfig, 
+    baseConfig, server || {}
+  )
+  
+  if (failedConfig) { return failedConfig }
+  return uploadFolder(sshConfig, `/home/ubuntu/app/${app}`)
 }
 
 // function to list the applications
@@ -43,13 +41,13 @@ export const listApps = async (sshConfig) => {
 } 
 
 // function to start the app
-export const startApp = async (app, sshConfig) => await runCommand(sshConfig, [`polar start ${app}`])
+export const startApp = async (app, sshConfig) => runCommand(sshConfig, [`polar start ${app}`])
 
 // function to stop the app
-export const stopApp = async (app, sshConfig) => await runCommand(sshConfig, [`polar stop ${app}`])
+export const stopApp = async (app, sshConfig) => runCommand(sshConfig, [`polar stop ${app}`])
 
 // function to remove app
-export const removeApp = async (app, sshConfig) => await runCommand(sshConfig, [`sudo polar delete ${app}`])
+export const removeApp = async (app, sshConfig) => runCommand(sshConfig, [`sudo polar delete ${app}`])
 
 export { startInstance, stopInstance, rebootInstance, describeInstance } from './ec2.js'
 

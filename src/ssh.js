@@ -36,7 +36,7 @@ export const runCommand = async (config, cmd) => {
         if (cmdError) {
           reject(new Error(`Failed: ${cmdError}`))
         } else { 
-          resolve(cmdOutput)
+          resolve(cmdOutput || 'Done')
         }
         client.end()
       }).stderr.on('data', data => {
@@ -117,8 +117,8 @@ export const uploadFolder = async (config, remotePath) => {
 
   if (uploadFailed) { return uploadFailed }
 
-  return runCommand(config, [
+  return (await runCommand(config, [
     `tar -xf ${remotePath} -C ${path.dirname(remotePath)} --one-top-level`,
     `rm ${remotePath}`
-  ])
+  ]))[1]
 }

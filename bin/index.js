@@ -27,7 +27,7 @@ const test = async (fn, ...params) => {
   } else if (Array.isArray(result) ) {
     console.log(result[1].message)
   } else if (result) {
-    console.log(result)
+    console.log(result.message)
   } else {
     console.log('\nDone')
   }
@@ -52,7 +52,10 @@ const clientConfig = {
 //   onSecondCheck: data => console.log(data),
 // })
 
-// test(configureNginx, clientConfig, 'test.com')
+// test(configureNginx, 'test.com', clientConfig, {
+//   server: nginxConfig.server,
+//   ssl: nginxConfig.sslConfig
+// })
 // test(configureAppRules, clientConfig, 'test', 'test.com', 4000, nginxConfig.app)
 
 // ec2
@@ -62,7 +65,7 @@ const clientConfig = {
 // test(rebootInstance, instanceId, ec2Client)
 
 // polar
-// test(upload, clientConfig, 'test.com', nginxConfig.app)
+// test(upload, 'test.com', nginxConfig.app, clientConfig)
 // test(runCommand, clientConfig, [
 //   'curl -L https://github.com/nablaFox/Polar/archive/main.zip -o Polar.zip',
 //   'unzip Polar.zip',
@@ -83,8 +86,8 @@ const clientConfig = {
 //   ssl: nginxConfig.sslConfig
 // })
 
-// await test(upload, clientConfig, domain, nginxConfig.app)
+// await test(upload, domain, nginxConfig.app, clientConfig)
 // await test(stopApp, clientConfig, 'my-second-test')
-// await test(startApp, clientConfig, 'my-second-test')
-// await test(removeApp, clientConfig, 'my-first-test')
+// await test(startApp, 'test-1', clientConfig)
+// await test(removeApp, 'test-1', clientConfig)
 // await test(listApps, clientConfig)
