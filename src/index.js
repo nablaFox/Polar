@@ -49,6 +49,5 @@ export const stopApp = async (app, sshConfig) => runCommand(sshConfig, [`polar s
 // function to remove app
 export const removeApp = async (app, sshConfig) => runCommand(sshConfig, [`sudo polar delete ${app}`])
 
-export { startInstance, stopInstance, rebootInstance, describeInstance } from './ec2.js'
-
-export { configureNginx, certbot } from './nginx.js'
+export * from './ec2.js'
+export * from './nginx.js'

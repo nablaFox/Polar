@@ -1,93 +1,54 @@
 #!/usr/bin/env node
 
 import { program } from 'commander'
-import { readFileSync } from 'fs'
-import { runCommand, runShell, uploadFile, uploadFolder } from '../src/ssh.js'
-import { ec2Client, nginxConfig } from '../src/config.js'
-import { 
-  upload, 
-  startApp, 
-  stopApp, 
-  listApps, 
-  removeApp, 
-  stopInstance,
-  startInstance,
-  rebootInstance,
-  describeInstance,
-  configureNginx,
-  certbot
-} from '../src/index.js'
+import { setup } from './commands/config.js'
+import { deploy, start, stop, list, init, remove } from './commands/app.js'
+import { startInstance, stopInstance, rebootInstance, getInstanceStatus } from './commands/instance.js'
 
-const test = async (fn, ...params) => {
-  const result = await fn(...params)
+program
+  .name('polar-cli')
+  .description('CLI for managing web applications on AWS EC2 instances')
+  .version('0.0.1')
 
-  if (Array.isArray(result) && result[0]) {
-    console.log(result[0])
-    console.log('\nDone')
-  } else if (Array.isArray(result) ) {
-    console.log(result[1].message)
-  } else if (result) {
-    console.log(result.message)
-  } else {
-    console.log('\nDone')
-  }
-}
+program.command('setup')
+  .description('CLI configuration')
+  .action(setup)
 
-const domain = 'icedcube.net'
-const instanceId = 'i-0b1cd926939e84f0a'
-const clientConfig = {
-  host: 'ec2-18-157-191-202.eu-central-1.compute.amazonaws.com',
-  username: 'ubuntu',
-  privateKey: readFileSync('/home/sincro/Downloads/icecube-key.pem')
-}
+program.command('init')
+  .description('Create a polar.yml file')
+  .action(init)
 
-// ssh
-// test(uploadFile, clientConfig, '/home/ubuntu/backbone', 'backbone')
-// test(uploadFolder, clientConfig, '/home/ubuntu/app/test')
-// test(runCommand, clientConfig, ['ls -la'])
+program.command('deploy')
+  .description('Deploy the application')
+  .action(deploy)
 
-// nginx
-// test(certbot, clientConfig, 'test.com', {
-//   onFirstCheck: data => console.log(data),
-//   onSecondCheck: data => console.log(data),
-// })
+program.command('start')
+  .description('Start an application')
+  .argument('<app>', 'Application name')
+  .action(start)
 
-// test(configureNginx, 'test.com', clientConfig, {
-//   server: nginxConfig.server,
-//   ssl: nginxConfig.sslConfig
-// })
-// test(configureAppRules, clientConfig, 'test', 'test.com', 4000, nginxConfig.app)
+program.command('stop')
+  .description('Stop an application')
+  .argument('<app>', 'Application name')
+  .action(stop)
 
-// ec2
-// test(describeInstance, instanceId, ec2Client)
-// test(startInstance, instanceId, ec2Client)
-// test(stopInstance, instanceId, ec2Client)
-// test(rebootInstance, instanceId, ec2Client)
+program.command('remove')
+  .description('Remove an application')
+  .argument('<app>', 'Application name')
+  .action(remove)
 
-// polar
-// test(upload, 'test.com', nginxConfig.app, clientConfig)
-// test(runCommand, clientConfig, [
-//   'curl -L https://github.com/nablaFox/Polar/archive/main.zip -o Polar.zip',
-//   'unzip Polar.zip',
-//   'sudo mv Polar-main/src/scripts/polar.sh /usr/bin/polar',
-//   'sudo mv Polar-main/src/scripts /usr/lib/polar',
-//   'sudo chmod +x /usr/bin/polar',
-//   'sudo rm -r Polar*',  
-// ])
-// test(listApps, clientConfig)
-// test(startApp, clientConfig, 'my-first-test')
-// test(stopApp, clientConfig, 'my-first-test')
+program.command('list')
+  .description('List the applications')
+  .action(list)
 
+program.command('instance')
+  .description('Manage the instance')
+  .argument('<action>', 'Action to perform')
+  .action(action => {
+    action === 'start' && startInstance()
+    action === 'stop' && stopInstance()
+    action === 'reboot' && rebootInstance()
+    action === 'info' && getInstanceStatus()
+  })
 
-// general test
-
-// await test(configureNginx, clientConfig, domain, {
-//   server: nginxConfig.server,
-//   ssl: nginxConfig.sslConfig
-// })
-
-// await test(upload, domain, nginxConfig.app, clientConfig)
-// await test(stopApp, clientConfig, 'my-second-test')
-// await test(startApp, 'test-1', clientConfig)
-// await test(removeApp, 'test-1', clientConfig)
-// await test(listApps, clientConfig)
+program.parse()

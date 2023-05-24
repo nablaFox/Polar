@@ -20,9 +20,11 @@ start_app() {
 
 stop_app() {
   local app_name=$1
-  local pid=$(get_app_pid "$app_name")
-  if [ -n "$pid" ]; then
-    kill "$pid"
+  local pids=$(get_app_pid "$app_name")
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      kill "$pid"
+    done
     echo "$app_name stopped"
   else
     >&2 echo "App '$app_name' is already closed"
