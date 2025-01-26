@@ -1,6 +1,6 @@
 # Polar CLI
 
-The Polar Command Line Interface (CLI) Tools can be used to deploy and manage nodejs applications on AWS EC2 instances.
+Polar CLI simplifies deploying and managing Node.js applications on AWS EC2 instances.
 
 ## Installation
 
