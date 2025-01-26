@@ -10,7 +10,7 @@ cd Polar
 npm i -g .
 ```
 
-This will provide you with the globally accessible `polar` command.
+This installs the globally accessible `polar` command.
 
 ## Setup
 
@@ -18,39 +18,34 @@ This will provide you with the globally accessible `polar` command.
 polar config [aws-credentials] [instance-id]
 ```
 
-_(if is an istance it's not provided, will be created for you)_
+If no instance ID is provided, a new EC2 instance will be created.
 
 ## Usage
 
-At the root of your project, run
+### 1. Initialize the project
+
+At your project root, run:
 
 ```bash
 polar init
 ```
 
-this will create a `polar.yml` file where you can configure the following options:
+this generates a `polar.yml` file with configurable options:
 
-- project: the project name
-- cmd: the command to run (default: npm start)
+- `project`: the project name
+- `cmd`: the command to run (default: npm start)
 
-When you want to deploy, just type
+### 2. Deploy your project
 
 ```bash
 polar deploy
 ```
 
-example:
+## Commands Overview
 
-## Commands
-
-polar list
-
-polart start [project]
-
-polar stop [project]
-
-polar instance --off
-
-polar instance --on
-
-polar instance --status
+- `polar list` – List available projects.
+- `polar start [project]` – Start a project.
+- `polar stop [project]` – Stop a project.
+- `polar instance --off` – Turn off the EC2 instance.
+- `polar instance --on` – Turn on the EC2 instance.
+- `polar instance --status` – Check the EC2 instance status.
